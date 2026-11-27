@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <radialGradient id="core" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.35" stop-color="#fcee0a"/>
+      <stop offset="1" stop-color="#ff7a1a"/>
+    </radialGradient>
+    <clipPath id="disc">
+      <circle cx="24" cy="24" r="10"/>
+    </clipPath>
+  </defs>
+
+  <!-- rays: cardinal in yellow, diagonal in magenta -->
+  <g stroke-width="3" stroke-linecap="round">
+    <g stroke="#fcee0a">
+      <line x1="24" y1="4" x2="24" y2="9"/>
+      <line x1="24" y1="39" x2="24" y2="44"/>
+      <line x1="4" y1="24" x2="9" y2="24"/>
+      <line x1="39" y1="24" x2="44" y2="24"/>
+    </g>
+    <g stroke="#ff2bd6">
+      <line x1="34.6" y1="13.4" x2="38.1" y2="9.9"/>
+      <line x1="13.4" y1="13.4" x2="9.9" y2="9.9"/>
+      <line x1="34.6" y1="34.6" x2="38.1" y2="38.1"/>
+      <line x1="13.4" y1="34.6" x2="9.9" y2="38.1"/>
+    </g>
+  </g>
+
+  <!-- synthwave sun disc with horizon bands -->
+  <circle cx="24" cy="24" r="10" fill="url(#core)"/>
+  <g clip-path="url(#disc)" fill="#1a0b3a">
+    <rect x="10" y="25.5" width="28" height="1.2"/>
+    <rect x="10" y="28.6" width="28" height="1.7"/>
+    <rect x="10" y="32" width="28" height="2.3"/>
+  </g>
+  <circle cx="24" cy="24" r="10" fill="none" stroke="#ff2bd6" stroke-width="1.5"/>
+</svg>

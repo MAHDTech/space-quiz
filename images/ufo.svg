@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120">
+  <defs>
+    <radialGradient id="dome" cx="0.38" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#e6fdff" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#00f0ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#0077a8" stop-opacity="0.75"/>
+    </radialGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2d6ff"/>
+      <stop offset="0.5" stop-color="#8b5cff"/>
+      <stop offset="1" stop-color="#3b1f8f"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#39ff88" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#39ff88" stop-opacity="0"/>
+    </linearGradient>
+    <style>
+      .light { animation: blink 0.6s steps(1) infinite; }
+      .l2 { animation-delay: 0.15s; }
+      .l3 { animation-delay: 0.3s; }
+      .l4 { animation-delay: 0.45s; }
+      .beam { animation: beam 0.5s ease-in-out infinite alternate; }
+      @keyframes blink { 50% { opacity: 0.2; } }
+      @keyframes beam { from { opacity: 0.45; } to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        .light, .beam { animation: none; }
+      }
+    </style>
+  </defs>
+
+  <!-- tractor beam -->
+  <path class="beam" d="M64 62 H96 L132 120 H28 Z" fill="url(#beam)"/>
+
+  <!-- pilot -->
+  <ellipse cx="80" cy="37" rx="7.5" ry="8.5" fill="#39ff88"/>
+  <ellipse cx="76.8" cy="36" rx="2.2" ry="3.2" fill="#07060f"/>
+  <ellipse cx="83.2" cy="36" rx="2.2" ry="3.2" fill="#07060f"/>
+  <line x1="76" y1="29" x2="72" y2="22" stroke="#39ff88" stroke-width="1.5"/>
+  <line x1="84" y1="29" x2="88" y2="22" stroke="#39ff88" stroke-width="1.5"/>
+  <circle cx="72" cy="22" r="1.8" fill="#fcee0a"/>
+  <circle cx="88" cy="22" r="1.8" fill="#fcee0a"/>
+
+  <!-- glass dome -->
+  <path d="M50 46 C50 12 110 12 110 46 Z" fill="url(#dome)" stroke="#00f0ff" stroke-width="2"/>
+  <path d="M60 36 C62 26 70 21 78 20" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- saucer -->
+  <ellipse cx="80" cy="60" rx="22" ry="6" fill="#ff2bd6"/>
+  <ellipse cx="80" cy="50" rx="76" ry="15" fill="url(#hull)" stroke="#ff2bd6" stroke-width="2"/>
+  <ellipse cx="80" cy="45.5" rx="58" ry="6.5" fill="#ffffff" opacity="0.2"/>
+
+  <!-- running lights -->
+  <circle class="light" cx="22" cy="53" r="4" fill="#fcee0a"/>
+  <circle class="light l2" cx="50" cy="58" r="4" fill="#00f0ff"/>
+  <circle class="light l3" cx="80" cy="60" r="4" fill="#39ff88"/>
+  <circle class="light l4" cx="110" cy="58" r="4" fill="#00f0ff"/>
+  <circle class="light" cx="138" cy="53" r="4" fill="#fcee0a"/>
+</svg>

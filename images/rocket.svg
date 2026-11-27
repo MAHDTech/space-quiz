@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 128" width="64" height="128">
+  <defs>
+    <linearGradient id="hull-shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9fa9e0"/>
+      <stop offset="0.4" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#7b86c6"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="0.38" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#e6fdff"/>
+      <stop offset="0.45" stop-color="#00f0ff"/>
+      <stop offset="1" stop-color="#00586b"/>
+    </radialGradient>
+    <clipPath id="hull">
+      <path d="M32 4 C46 18 50 44 48 104 L16 104 C14 44 18 18 32 4 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- side fins -->
+  <path d="M18 74 L3 102 L3 114 L19 104 Z" fill="#ff2bd6" stroke="#2a1a5e" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M46 74 L61 102 L61 114 L45 104 Z" fill="#ff2bd6" stroke="#2a1a5e" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- nozzle -->
+  <path d="M21 103 H43 L40 114 H24 Z" fill="#3a2f6b" stroke="#2a1a5e" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- hull, with nose cone and stripes clipped to its silhouette -->
+  <path d="M32 4 C46 18 50 44 48 104 L16 104 C14 44 18 18 32 4 Z" fill="url(#hull-shade)"/>
+  <g clip-path="url(#hull)">
+    <rect x="0" y="0" width="64" height="30" fill="#ff2bd6"/>
+    <rect x="0" y="28" width="64" height="3" fill="#fcee0a"/>
+    <rect x="0" y="84" width="64" height="7" fill="#fcee0a"/>
+    <rect x="0" y="93" width="64" height="2" fill="#00f0ff"/>
+    <rect x="24" y="0" width="4" height="104" fill="#ffffff" opacity="0.55"/>
+  </g>
+  <path d="M32 4 C46 18 50 44 48 104 L16 104 C14 44 18 18 32 4 Z" fill="none" stroke="#2a1a5e" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- porthole -->
+  <circle cx="32" cy="52" r="9.5" fill="url(#glass)" stroke="#2a1a5e" stroke-width="3"/>
+  <circle cx="29" cy="49" r="2.5" fill="#ffffff" opacity="0.85"/>
+
+  <!-- centre fin -->
+  <rect x="30" y="80" width="4" height="30" rx="1" fill="#c21aa3" stroke="#2a1a5e" stroke-width="1.5"/>
+</svg>

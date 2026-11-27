@@ -1,0 +1,2581 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>NEON//ORBIT · Space Exploration Quiz</title>
+        <meta
+            name="description"
+            content="A cyberpunk-themed, accessible 10-question space exploration quiz."
+        />
+        <meta name="theme-color" content="#07060f" />
+        <script>
+            // Resolve the theme before first paint so there's no flash of the wrong colours.
+            ;(() => {
+                let theme = null
+                try {
+                    theme = localStorage.getItem("neon-orbit-theme")
+                } catch {}
+                if (theme !== "light" && theme !== "dark") {
+                    theme = matchMedia("(prefers-color-scheme: light)").matches
+                        ? "light"
+                        : "dark"
+                }
+                document.documentElement.dataset.theme = theme
+                document
+                    .querySelector('meta[name="theme-color"]')
+                    ?.setAttribute(
+                        "content",
+                        theme === "light" ? "#f4f1ff" : "#07060f"
+                    )
+            })()
+        </script>
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>"
+        />
+        <style>
+            :root {
+                --bg: #07060f;
+                --bg-deep: #0b0820;
+                --panel: rgba(13, 9, 30, 0.86);
+                --text: #eaf6ff;
+                --muted: #b4bedf;
+                --cyan: #00f0ff;
+                --magenta: #ff2bd6;
+                --yellow: #fcee0a;
+                --violet: #8b5cff;
+                --green: #39ff88;
+                --red: #ff5c7a;
+                /* RGB channels so tints/glows can be themed via rgba(var(--x-rgb), a). */
+                --cyan-rgb: 0, 240, 255;
+                --magenta-rgb: 255, 43, 214;
+                --yellow-rgb: 252, 238, 10;
+                --violet-rgb: 139, 92, 255;
+                --green-rgb: 57, 255, 136;
+                --red-rgb: 255, 92, 122;
+                --ink-rgb: 255, 255, 255;
+                --btn-bg: #fcee0a;
+                --font:
+                    ui-monospace, "SFMono-Regular", "Cascadia Code",
+                    "JetBrains Mono", "Fira Code", Menlo, Consolas,
+                    "Liberation Mono", monospace;
+                --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+            }
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            html {
+                color-scheme: dark;
+            }
+
+            /* ---------- Light theme ("lights on") ---------- */
+            /* Neon accents are deepened so they keep AA contrast as text on a light background. */
+            :root[data-theme="light"] {
+                color-scheme: light;
+                --bg: #f4f1ff;
+                --bg-deep: #ffffff;
+                --panel: rgba(255, 255, 255, 0.86);
+                --text: #160f2e;
+                --muted: #4a4470;
+                --cyan: #006b8f;
+                --magenta: #c0008f;
+                --yellow: #8a5a00;
+                --violet: #6a3df0;
+                --green: #00804a;
+                --red: #c8102e;
+                --cyan-rgb: 0, 107, 143;
+                --magenta-rgb: 192, 0, 143;
+                --yellow-rgb: 138, 90, 0;
+                --violet-rgb: 106, 61, 240;
+                --green-rgb: 0, 128, 74;
+                --red-rgb: 200, 16, 46;
+                --ink-rgb: 22, 15, 46;
+            }
+            :root[data-theme="light"] body {
+                background:
+                    radial-gradient(
+                        ellipse 80% 60% at 50% -10%,
+                        rgba(255, 43, 214, 0.18),
+                        transparent 60%
+                    ),
+                    radial-gradient(
+                        ellipse 60% 40% at 100% 100%,
+                        rgba(0, 240, 255, 0.22),
+                        transparent 70%
+                    ),
+                    radial-gradient(
+                        ellipse 50% 40% at 0% 80%,
+                        rgba(139, 92, 255, 0.14),
+                        transparent 70%
+                    ),
+                    var(--bg);
+                background-attachment: fixed;
+            }
+            :root[data-theme="light"] .scanlines {
+                background:
+                    repeating-linear-gradient(
+                        to bottom,
+                        rgba(22, 15, 46, 0.04) 0 1px,
+                        transparent 1px 3px
+                    ),
+                    radial-gradient(
+                        ellipse at center,
+                        transparent 60%,
+                        rgba(106, 61, 240, 0.14) 100%
+                    );
+            }
+
+            /* Circular "lights on/off" reveal, driven from JS via the View Transitions API. */
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation: none;
+                mix-blend-mode: normal;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family: var(--font);
+                font-size: 1rem;
+                line-height: 1.6;
+                color: var(--text);
+                background:
+                    radial-gradient(
+                        ellipse 80% 60% at 50% -10%,
+                        rgba(var(--violet-rgb), 0.35),
+                        transparent 60%
+                    ),
+                    radial-gradient(
+                        ellipse 60% 40% at 100% 100%,
+                        rgba(var(--magenta-rgb), 0.18),
+                        transparent 70%
+                    ),
+                    var(--bg);
+                background-attachment: fixed;
+                overflow-x: hidden;
+            }
+
+            /* ---------- Ambient background layers ---------- */
+            #stars {
+                position: fixed;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                pointer-events: none;
+            }
+
+            .grid-floor {
+                position: fixed;
+                left: -50%;
+                right: -50%;
+                bottom: 0;
+                height: 45vh;
+                z-index: 0;
+                pointer-events: none;
+                background-image:
+                    linear-gradient(
+                        rgba(var(--magenta-rgb), 0.55) 2px,
+                        transparent 2px
+                    ),
+                    linear-gradient(
+                        90deg,
+                        rgba(var(--cyan-rgb), 0.4) 2px,
+                        transparent 2px
+                    );
+                background-size: 70px 70px;
+                transform: perspective(300px) rotateX(62deg);
+                transform-origin: 50% 100%;
+                -webkit-mask-image: linear-gradient(
+                    to bottom,
+                    transparent,
+                    #000 70%
+                );
+                mask-image: linear-gradient(to bottom, transparent, #000 70%);
+                opacity: 0.35;
+                animation: grid-move 3s linear infinite;
+            }
+
+            @keyframes grid-move {
+                to {
+                    background-position:
+                        0 70px,
+                        0 70px;
+                }
+            }
+
+            .scanlines {
+                position: fixed;
+                inset: 0;
+                z-index: 60;
+                pointer-events: none;
+                background:
+                    repeating-linear-gradient(
+                        to bottom,
+                        rgba(0, 0, 0, 0.16) 0 1px,
+                        transparent 1px 3px
+                    ),
+                    radial-gradient(
+                        ellipse at center,
+                        transparent 55%,
+                        rgba(0, 0, 0, 0.55) 100%
+                    );
+            }
+
+            .flash {
+                position: fixed;
+                inset: 0;
+                z-index: 50;
+                pointer-events: none;
+                opacity: 0;
+            }
+            .flash.good {
+                background: radial-gradient(
+                    circle at 50% 55%,
+                    rgba(var(--green-rgb), 0.28),
+                    transparent 65%
+                );
+                animation: flash 0.7s ease-out;
+            }
+            .flash.bad {
+                background: radial-gradient(
+                    circle at 50% 55%,
+                    rgba(var(--red-rgb), 0.3),
+                    transparent 65%
+                );
+                animation: flash 0.7s ease-out;
+            }
+            @keyframes flash {
+                0% {
+                    opacity: 0;
+                }
+                20% {
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                }
+            }
+
+            /* ---------- Layout ---------- */
+            .shell {
+                position: relative;
+                z-index: 1;
+                max-width: 880px;
+                min-height: 100vh;
+                margin: 0 auto;
+                padding: clamp(1rem, 3vw, 2rem);
+                display: flex;
+                flex-direction: column;
+                gap: 1.25rem;
+            }
+
+            .hud {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                flex-wrap: wrap;
+                padding-bottom: 0.75rem;
+                border-bottom: 1px dashed rgba(var(--cyan-rgb), 0.45);
+            }
+
+            .brand {
+                margin: 0;
+                font-weight: 800;
+                letter-spacing: 0.3em;
+                color: var(--magenta);
+                text-shadow: 0 0 10px rgba(var(--magenta-rgb), 0.7);
+            }
+            .brand small {
+                margin-left: 0.5em;
+                font-size: 0.7rem;
+                letter-spacing: 0.15em;
+                color: var(--cyan);
+                text-shadow: none;
+            }
+
+            .score {
+                margin: 0;
+                display: flex;
+                align-items: baseline;
+                gap: 0.5rem;
+                padding: 0.35rem 0.9rem;
+                border: 1px solid var(--yellow);
+                background: rgba(var(--yellow-rgb), 0.07);
+                color: var(--yellow);
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                box-shadow: 0 0 14px rgba(var(--yellow-rgb), 0.25);
+            }
+            .score-value {
+                display: inline-block;
+                min-width: 2ch;
+                text-align: right;
+                font-size: 1.35rem;
+                color: var(--text);
+            }
+            .score-value.bump {
+                animation: bump 0.6s var(--ease-out);
+            }
+            @keyframes bump {
+                0% {
+                    transform: scale(1);
+                }
+                35% {
+                    transform: scale(1.7);
+                    color: var(--green);
+                    text-shadow: 0 0 16px var(--green);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            /* ---------- Theme toggle ---------- */
+            .hud-actions {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-left: auto;
+            }
+            .theme-toggle {
+                flex: none;
+                display: grid;
+                place-items: center;
+                width: 2.75rem;
+                height: 2.75rem;
+                padding: 0;
+                border: 1px solid var(--yellow);
+                border-radius: 50%;
+                background-color: rgba(var(--yellow-rgb), 0.08);
+                box-shadow: 0 0 14px rgba(var(--yellow-rgb), 0.3);
+                cursor: pointer;
+                transition:
+                    transform 0.2s var(--ease-out),
+                    background-color 0.2s,
+                    box-shadow 0.2s;
+            }
+            .theme-toggle:hover {
+                transform: rotate(-15deg) scale(1.08);
+                background-color: rgba(var(--yellow-rgb), 0.16);
+                box-shadow: 0 0 22px rgba(var(--yellow-rgb), 0.55);
+            }
+            .theme-toggle:active {
+                transform: scale(0.9);
+                transition-duration: 0.06s;
+            }
+            :root[data-theme="light"] .theme-toggle {
+                border-color: var(--violet);
+                background-color: rgba(var(--violet-rgb), 0.08);
+                box-shadow: 0 0 14px rgba(var(--violet-rgb), 0.25);
+            }
+            :root[data-theme="light"] .theme-toggle:hover {
+                background-color: rgba(var(--violet-rgb), 0.16);
+                box-shadow: 0 0 22px rgba(var(--violet-rgb), 0.45);
+            }
+            .theme-toggle img {
+                display: block;
+                width: 1.75rem;
+                height: 1.75rem;
+                animation: icon-in 0.5s var(--ease-out);
+            }
+            /* Icon shows the action: sun turns the lights on, moon turns them off. */
+            :root[data-theme="light"] .icon-sun,
+            :root:not([data-theme="light"]) .icon-moon {
+                display: none;
+            }
+            @keyframes icon-in {
+                from {
+                    opacity: 0;
+                    transform: rotate(-120deg) scale(0.3);
+                }
+            }
+
+            /* ---------- Panels ---------- */
+            .panel {
+                position: relative;
+                padding: clamp(1.25rem, 4vw, 2.5rem);
+                background: var(--panel);
+                border: 1px solid rgba(var(--cyan-rgb), 0.5);
+                box-shadow:
+                    inset 0 0 0 1px rgba(var(--magenta-rgb), 0.12),
+                    0 0 30px rgba(var(--cyan-rgb), 0.15),
+                    0 0 80px rgba(var(--magenta-rgb), 0.1);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
+            }
+            .panel::before,
+            .panel::after {
+                content: "";
+                position: absolute;
+                width: 22px;
+                height: 22px;
+                pointer-events: none;
+            }
+            .panel::before {
+                top: -4px;
+                left: -4px;
+                border-top: 3px solid var(--magenta);
+                border-left: 3px solid var(--magenta);
+            }
+            .panel::after {
+                bottom: -4px;
+                right: -4px;
+                border-bottom: 3px solid var(--yellow);
+                border-right: 3px solid var(--yellow);
+            }
+
+            .tag {
+                margin: 0 0 0.75rem;
+                font-size: 0.8rem;
+                font-weight: 700;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: var(--yellow);
+            }
+
+            h1,
+            h2,
+            h3 {
+                line-height: 1.2;
+                margin: 0;
+            }
+
+            /* ---------- Glitch heading ---------- */
+            .glitch {
+                position: relative;
+                font-size: clamp(2rem, 7vw, 3.6rem);
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--text);
+                text-shadow:
+                    3px 0 var(--magenta),
+                    -3px 0 var(--cyan),
+                    0 0 24px rgba(var(--cyan-rgb), 0.5);
+            }
+            .glitch-layer {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                clip-path: inset(0 0 100% 0);
+            }
+            .glitch-layer.l1 {
+                color: var(--cyan);
+                animation: glitch-1 3.2s steps(1) infinite;
+            }
+            .glitch-layer.l2 {
+                color: var(--magenta);
+                animation: glitch-2 2.7s steps(1) infinite;
+            }
+            @keyframes glitch-1 {
+                0%,
+                84%,
+                100% {
+                    clip-path: inset(0 0 100% 0);
+                    transform: none;
+                }
+                86% {
+                    clip-path: inset(8% 0 62% 0);
+                    transform: translate(-6px, -1px);
+                }
+                89% {
+                    clip-path: inset(48% 0 22% 0);
+                    transform: translate(5px, 1px);
+                }
+                92% {
+                    clip-path: inset(78% 0 4% 0);
+                    transform: translate(-3px, 0);
+                }
+                95% {
+                    clip-path: inset(28% 0 50% 0);
+                    transform: translate(4px, 0);
+                }
+            }
+            @keyframes glitch-2 {
+                0%,
+                78%,
+                100% {
+                    clip-path: inset(0 0 100% 0);
+                    transform: none;
+                }
+                80% {
+                    clip-path: inset(60% 0 15% 0);
+                    transform: translate(6px, 1px);
+                }
+                83% {
+                    clip-path: inset(15% 0 70% 0);
+                    transform: translate(-5px, 0);
+                }
+                86% {
+                    clip-path: inset(40% 0 38% 0);
+                    transform: translate(3px, -1px);
+                }
+            }
+
+            .lead {
+                margin: 1.25rem 0 1rem;
+                font-size: 1.05rem;
+                color: var(--muted);
+                max-width: 60ch;
+            }
+
+            .briefing {
+                list-style: none;
+                margin: 0 0 2rem;
+                padding: 0;
+                display: grid;
+                gap: 0.5rem;
+            }
+            .briefing li {
+                position: relative;
+                padding-left: 1.75rem;
+            }
+            .briefing li::before {
+                content: "▸";
+                position: absolute;
+                left: 0.25rem;
+                color: var(--cyan);
+            }
+
+            kbd {
+                font-family: inherit;
+                font-size: 0.85em;
+                padding: 0.05em 0.4em;
+                border: 1px solid var(--cyan);
+                color: var(--cyan);
+                background: rgba(var(--cyan-rgb), 0.08);
+            }
+
+            /* ---------- Buttons ---------- */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 0.9rem 1.6rem;
+                font: inherit;
+                font-weight: 800;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                border: 0;
+                cursor: pointer;
+                color: #0a0a0a;
+                background: var(--btn-bg);
+                box-shadow:
+                    5px 5px 0 var(--magenta),
+                    0 0 22px rgba(var(--yellow-rgb), 0.35);
+                clip-path: polygon(
+                    0 0,
+                    calc(100% - 14px) 0,
+                    100% 14px,
+                    100% 100%,
+                    14px 100%,
+                    0 calc(100% - 14px)
+                );
+                transition:
+                    transform 0.15s var(--ease-out),
+                    box-shadow 0.15s var(--ease-out),
+                    background 0.15s;
+            }
+            .btn:hover {
+                transform: translate(-2px, -2px);
+                background: #fff35a;
+            }
+            .btn:active {
+                transform: translate(2px, 2px);
+            }
+            /* clip-path hides outlines, so use an inner ring for focus. */
+            .btn:focus-visible {
+                outline: none;
+                box-shadow:
+                    inset 0 0 0 3px #0a0a0a,
+                    inset 0 0 0 6px var(--cyan);
+            }
+
+            :focus-visible {
+                outline: 3px solid var(--cyan);
+                outline-offset: 3px;
+            }
+            [tabindex="-1"]:focus {
+                outline: none;
+            }
+
+            /* ---------- Quiz ---------- */
+            .progress-meta {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                margin-bottom: 0.5rem;
+                font-size: 0.85rem;
+                font-weight: 700;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--cyan);
+            }
+
+            .progress {
+                position: relative;
+                height: 16px;
+                border: 1px solid rgba(var(--cyan-rgb), 0.55);
+                background: rgba(var(--ink-rgb), 0.06);
+                overflow: hidden;
+            }
+            .progress::after {
+                /* segment ticks */
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: repeating-linear-gradient(
+                    90deg,
+                    transparent 0 calc(10% - 2px),
+                    var(--bg) calc(10% - 2px) 10%
+                );
+                pointer-events: none;
+            }
+            .progress-fill {
+                position: relative;
+                height: 100%;
+                width: 0;
+                background: linear-gradient(
+                    90deg,
+                    var(--magenta),
+                    var(--violet),
+                    var(--cyan)
+                );
+                box-shadow: 0 0 14px var(--cyan);
+                transition: width 0.7s var(--ease-out);
+                overflow: hidden;
+            }
+            .progress-fill::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: repeating-linear-gradient(
+                    -45deg,
+                    rgba(255, 255, 255, 0.25) 0 6px,
+                    transparent 6px 12px
+                );
+                animation: stripes 0.8s linear infinite;
+            }
+            @keyframes stripes {
+                to {
+                    background-position: 17px 0;
+                }
+            }
+
+            .question-card {
+                margin-top: 1.75rem;
+            }
+            .question-card.enter {
+                animation: enter 0.45s var(--ease-out);
+            }
+            @keyframes enter {
+                from {
+                    opacity: 0;
+                    transform: translateX(24px) skewX(-4deg);
+                    filter: hue-rotate(60deg);
+                }
+                to {
+                    opacity: 1;
+                    transform: none;
+                    filter: none;
+                }
+            }
+
+            .question {
+                font-size: clamp(1.25rem, 3.4vw, 1.65rem);
+                font-weight: 800;
+                margin-bottom: 1.5rem;
+                text-wrap: balance;
+            }
+
+            .options {
+                display: grid;
+                gap: 0.85rem;
+            }
+            @media (min-width: 640px) {
+                .options {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+
+            .option {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 0.9rem;
+                width: 100%;
+                min-height: 3.75rem;
+                padding: 0.85rem 1rem;
+                font: inherit;
+                font-size: 1rem;
+                text-align: left;
+                color: var(--text);
+                /* Tint lives in background-color so state changes can fade; the sheen stays constant. */
+                background-color: rgba(var(--cyan-rgb), 0.07);
+                background-image: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(var(--violet-rgb), 0.08)
+                );
+                border: 1px solid rgba(var(--cyan-rgb), 0.4);
+                border-left: 4px solid var(--cyan);
+                box-shadow: 0 3px 0 rgba(var(--cyan-rgb), 0.2);
+                cursor: pointer;
+                transition:
+                    transform 0.15s var(--ease-out),
+                    border-color 0.15s,
+                    background-color 0.15s,
+                    box-shadow 0.15s;
+            }
+            .option:hover:not(:disabled) {
+                transform: translateX(4px);
+                border-color: var(--magenta);
+                background-color: rgba(var(--magenta-rgb), 0.14);
+                box-shadow:
+                    0 3px 0 rgba(var(--magenta-rgb), 0.4),
+                    0 0 18px rgba(var(--magenta-rgb), 0.35);
+            }
+            .option:active:not(:disabled) {
+                transform: translate(4px, 3px);
+                background-color: rgba(var(--magenta-rgb), 0.2);
+                box-shadow:
+                    0 0 0 rgba(var(--magenta-rgb), 0.4),
+                    0 0 10px rgba(var(--magenta-rgb), 0.3);
+                transition-duration: 0.06s;
+            }
+            .option:focus-visible {
+                outline: 3px solid var(--yellow);
+                outline-offset: 3px;
+                animation: focus-ring-in 0.18s var(--ease-out);
+            }
+            @keyframes focus-ring-in {
+                from {
+                    outline-color: rgba(var(--yellow-rgb), 0);
+                    outline-offset: 9px;
+                }
+            }
+            .option:disabled {
+                cursor: default;
+                transition:
+                    transform 0.15s var(--ease-out),
+                    border-color 0.4s ease,
+                    background-color 0.4s ease,
+                    box-shadow 0.5s ease,
+                    opacity 0.4s ease;
+            }
+            .option:disabled:not(.is-correct):not(.is-wrong) {
+                opacity: 0.55;
+            }
+
+            .key {
+                flex: none;
+                display: grid;
+                place-items: center;
+                width: 2rem;
+                height: 2rem;
+                font-weight: 800;
+                color: var(--bg);
+                background: var(--cyan);
+                transition:
+                    background 0.15s,
+                    transform 0.15s var(--ease-out);
+            }
+            .option:hover:not(:disabled) .key {
+                background: var(--magenta);
+            }
+            .option:focus-visible:not(:disabled) .key {
+                background: var(--yellow);
+            }
+            .option:active:not(:disabled) .key {
+                transform: scale(0.9);
+                transition-duration: 0.06s;
+            }
+            .option:disabled .key {
+                transition: background 0.4s ease;
+            }
+
+            .label {
+                flex: 1;
+            }
+
+            .mark {
+                flex: none;
+                font-size: 0.8rem;
+                font-weight: 800;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .mark:empty {
+                display: none;
+            }
+
+            .option.is-correct {
+                border-color: var(--green);
+                background-color: rgba(var(--green-rgb), 0.14);
+                box-shadow:
+                    0 3px 0 rgba(var(--green-rgb), 0.35),
+                    0 0 22px rgba(var(--green-rgb), 0.45);
+                animation: pop 0.6s var(--ease-out);
+            }
+            .option.is-correct .key {
+                background: var(--green);
+            }
+            .option.is-correct .mark {
+                color: var(--green);
+            }
+            .option.is-correct .mark,
+            .option.is-wrong .mark {
+                animation: mark-in 0.35s var(--ease-out) 0.1s both;
+            }
+            @keyframes mark-in {
+                from {
+                    opacity: 0;
+                    transform: translateX(-6px);
+                }
+            }
+
+            .option.is-wrong {
+                border-color: var(--red);
+                background-color: rgba(var(--red-rgb), 0.14);
+                box-shadow:
+                    0 3px 0 rgba(var(--red-rgb), 0.35),
+                    0 0 22px rgba(var(--red-rgb), 0.45);
+                animation:
+                    shake 0.5s ease-in-out,
+                    rgb-split 0.5s steps(2);
+            }
+            .option.is-wrong .key {
+                background: var(--red);
+            }
+            .option.is-wrong .mark {
+                color: var(--red);
+            }
+
+            @keyframes pop {
+                0% {
+                    transform: scale(1);
+                }
+                40% {
+                    transform: scale(1.05);
+                }
+                70% {
+                    transform: scale(0.98);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            @keyframes shake {
+                0%,
+                100% {
+                    transform: translateX(0);
+                }
+                15% {
+                    transform: translateX(-10px);
+                }
+                30% {
+                    transform: translateX(9px);
+                }
+                45% {
+                    transform: translateX(-7px);
+                }
+                60% {
+                    transform: translateX(5px);
+                }
+                75% {
+                    transform: translateX(-3px);
+                }
+            }
+            @keyframes rgb-split {
+                0%,
+                100% {
+                    text-shadow: none;
+                }
+                50% {
+                    text-shadow:
+                        -3px 0 var(--cyan),
+                        3px 0 var(--magenta);
+                }
+            }
+
+            .spark {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 7px;
+                height: 7px;
+                background: var(--c);
+                box-shadow: 0 0 10px var(--c);
+                pointer-events: none;
+                animation: spark 0.75s var(--ease-out) forwards;
+            }
+            @keyframes spark {
+                from {
+                    transform: translate(-50%, -50%) rotate(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translate(
+                            calc(-50% + var(--dx)),
+                            calc(-50% + var(--dy))
+                        )
+                        rotate(180deg) scale(0.2);
+                    opacity: 0;
+                }
+            }
+
+            .feedback {
+                margin-top: 1.5rem;
+                padding: 1rem 1.25rem;
+                border-left: 4px solid;
+                animation: feedback-in 0.45s var(--ease-out);
+            }
+            .feedback.good {
+                border-color: var(--green);
+                background: rgba(var(--green-rgb), 0.08);
+            }
+            .feedback.bad {
+                border-color: var(--red);
+                background: rgba(var(--red-rgb), 0.08);
+            }
+            .feedback-title {
+                margin: 0 0 0.35rem;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+            }
+            .good .feedback-title {
+                color: var(--green);
+            }
+            .bad .feedback-title {
+                color: var(--red);
+            }
+            .feedback-fact {
+                margin: 0;
+                color: var(--muted);
+            }
+            @keyframes feedback-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px);
+                    clip-path: inset(0 100% 0 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: none;
+                    clip-path: inset(0 0 0 0);
+                }
+            }
+
+            .actions {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 1.5rem;
+            }
+
+            /* ---------- Results ---------- */
+            .results-title {
+                font-size: clamp(1.75rem, 5vw, 2.6rem);
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                text-shadow:
+                    2px 0 var(--magenta),
+                    -2px 0 var(--cyan);
+            }
+
+            .results-top {
+                display: grid;
+                gap: 2rem;
+                align-items: center;
+                margin: 2rem 0;
+            }
+            @media (min-width: 640px) {
+                .results-top {
+                    grid-template-columns: auto 1fr;
+                }
+            }
+
+            .ring {
+                --p: 0;
+                position: relative;
+                justify-self: center;
+                width: min(200px, 60vw);
+                aspect-ratio: 1;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: conic-gradient(
+                    var(--magenta),
+                    var(--cyan) calc(var(--p) * 1%),
+                    rgba(var(--ink-rgb), 0.08) 0
+                );
+                box-shadow: 0 0 40px rgba(var(--cyan-rgb), 0.3);
+            }
+            .ring::before {
+                content: "";
+                position: absolute;
+                inset: 14px;
+                border-radius: 50%;
+                background: var(--bg-deep);
+                box-shadow: inset 0 0 20px rgba(var(--magenta-rgb), 0.3);
+            }
+            .ring-inner {
+                position: relative;
+                text-align: center;
+                line-height: 1;
+            }
+            .ring-score {
+                display: block;
+                font-size: 3.5rem;
+                font-weight: 900;
+                color: var(--text);
+                text-shadow: 0 0 18px var(--cyan);
+            }
+            .ring-total {
+                font-size: 0.9rem;
+                letter-spacing: 0.2em;
+                color: var(--muted);
+            }
+
+            .rank-label {
+                margin: 0;
+                font-size: 0.8rem;
+                letter-spacing: 0.25em;
+                color: var(--yellow);
+            }
+            .rank {
+                margin: 0.25rem 0 0.5rem;
+                font-size: clamp(1.4rem, 4vw, 2rem);
+                font-weight: 900;
+                text-transform: uppercase;
+                color: var(--cyan);
+                text-shadow: 0 0 14px rgba(var(--cyan-rgb), 0.6);
+            }
+            .rank-msg {
+                margin: 0 0 1.25rem;
+                color: var(--muted);
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.75rem;
+                margin: 0;
+            }
+            .stats div {
+                padding: 0.6rem;
+                text-align: center;
+                border: 1px solid rgba(var(--violet-rgb), 0.55);
+                background: rgba(var(--violet-rgb), 0.08);
+            }
+            .stats dt {
+                font-size: 0.72rem;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--muted);
+            }
+            .stats dd {
+                margin: 0;
+                font-size: 1.4rem;
+                font-weight: 800;
+            }
+
+            .review-title {
+                font-size: 1rem;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: var(--magenta);
+                margin-bottom: 1rem;
+            }
+            .review {
+                list-style: none;
+                margin: 0 0 2rem;
+                padding: 0;
+                display: grid;
+                gap: 0.6rem;
+                counter-reset: log;
+            }
+            .review-item {
+                counter-increment: log;
+                position: relative;
+                padding: 0.75rem 1rem 0.75rem 3.25rem;
+                border: 1px solid rgba(var(--ink-rgb), 0.1);
+                border-left: 4px solid;
+                background: rgba(var(--ink-rgb), 0.03);
+                animation: enter 0.4s var(--ease-out) both;
+            }
+            .review-item::before {
+                content: counter(log, decimal-leading-zero);
+                position: absolute;
+                left: 0.85rem;
+                top: 0.75rem;
+                font-weight: 800;
+                color: var(--muted);
+            }
+            .review-item.good {
+                border-left-color: var(--green);
+            }
+            .review-item.bad {
+                border-left-color: var(--red);
+            }
+            .review-item p {
+                margin: 0;
+            }
+            .review-q {
+                font-weight: 700;
+                margin-bottom: 0.25rem !important;
+            }
+            .review-a {
+                font-size: 0.9rem;
+                color: var(--muted);
+            }
+            .review-a strong {
+                color: var(--text);
+            }
+            .badge {
+                display: inline-block;
+                margin-bottom: 0.35rem;
+                font-size: 0.72rem;
+                font-weight: 800;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+            }
+            .good .badge {
+                color: var(--green);
+            }
+            .bad .badge {
+                color: var(--red);
+            }
+
+            .footer {
+                margin-top: auto;
+                text-align: center;
+                font-size: 0.75rem;
+                letter-spacing: 0.15em;
+                color: var(--muted);
+            }
+
+            /* ---------- Ship FX (correct = flyby, wrong = rocket explosion) ---------- */
+            .fx-stage {
+                position: fixed;
+                inset: 0;
+                z-index: 55;
+                pointer-events: none;
+                overflow: hidden;
+            }
+
+            .ship {
+                position: relative;
+                width: 64px;
+                height: 128px;
+            }
+            .ship img {
+                position: absolute;
+                display: block;
+            }
+            .ship .hull {
+                inset: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .ship .flame {
+                left: 12px;
+                top: 110px;
+                width: 40px;
+                height: 90px;
+                transform-origin: 50% 0;
+                animation: flicker 0.08s steps(2) infinite alternate;
+            }
+            .ship .trail {
+                position: absolute;
+                left: 24px;
+                top: 150px;
+                width: 16px;
+                height: 260px;
+                border-radius: 50%;
+                background: linear-gradient(
+                    to bottom,
+                    rgba(255, 122, 26, 0.85),
+                    rgba(var(--magenta-rgb), 0.5) 30%,
+                    rgba(var(--cyan-rgb), 0.25) 65%,
+                    transparent
+                );
+                filter: blur(5px);
+            }
+            @keyframes flicker {
+                from {
+                    transform: scale(0.95, 0.85);
+                }
+                to {
+                    transform: scale(1.05, 1.15);
+                }
+            }
+
+            /* Correct: rocket streaks diagonally across the screen */
+            .fly-rocket {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin: -64px 0 0 -32px;
+                filter: drop-shadow(0 0 12px rgba(var(--magenta-rgb), 0.65));
+                animation: fly-rocket 1.8s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+            }
+            @keyframes fly-rocket {
+                from {
+                    transform: translate(var(--sx), var(--sy))
+                        rotate(var(--angle)) scale(0.7);
+                }
+                to {
+                    transform: translate(var(--ex), var(--ey))
+                        rotate(var(--angle)) scale(1.15);
+                }
+            }
+
+            /* Correct: UFO swoops in, hovers, then warps off */
+            .fly-ufo {
+                position: absolute;
+                left: 0;
+                top: var(--y, 12vh);
+                width: 160px;
+                filter: drop-shadow(0 0 14px rgba(var(--cyan-rgb), 0.7));
+                animation: fly-ufo 2s ease-in-out forwards;
+            }
+            .fly-ufo img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            @keyframes fly-ufo {
+                0% {
+                    transform: translate(-220px, 22vh) rotate(-12deg) scale(0.7);
+                }
+                22% {
+                    transform: translate(20vw, 6vh) rotate(9deg) scale(1);
+                }
+                42% {
+                    transform: translate(40vw, 14vh) rotate(-6deg) scale(1);
+                }
+                55% {
+                    transform: translate(47vw, 9vh) rotate(4deg) scale(1.05);
+                }
+                68% {
+                    transform: translate(50vw, 11vh) rotate(-3deg) scale(1.05);
+                }
+                84% {
+                    transform: translate(72vw, 2vh) rotate(12deg) scale(0.9);
+                }
+                100% {
+                    transform: translate(calc(100vw + 80px), -14vh)
+                        rotate(20deg) scale(0.4);
+                }
+            }
+
+            /* Wrong: rocket sputters up, then blows apart */
+            .crash {
+                position: absolute;
+                width: 0;
+                height: 0;
+            }
+            .crash-rocket,
+            .frag {
+                position: absolute;
+                left: -32px;
+                top: -64px;
+                width: 64px;
+                height: 128px;
+            }
+            .crash-rocket {
+                animation: crash-rise 0.8s cubic-bezier(0.3, 0.6, 0.4, 1)
+                    forwards;
+            }
+            .crash-rocket .flame {
+                animation: sputter 0.12s steps(3) infinite;
+            }
+            .crash-rocket .trail {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(255, 122, 26, 0.75),
+                    rgba(130, 120, 160, 0.45) 35%,
+                    transparent
+                );
+                filter: blur(7px);
+            }
+            @keyframes crash-rise {
+                0% {
+                    transform: translate(0, 70vh) rotate(0deg);
+                    opacity: 1;
+                }
+                55% {
+                    transform: translate(0, 12vh) rotate(-6deg);
+                }
+                70% {
+                    transform: translate(6px, 6vh) rotate(10deg);
+                }
+                85% {
+                    transform: translate(-8px, 2vh) rotate(-14deg);
+                }
+                99% {
+                    transform: translate(0, 0) rotate(22deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(0, 0) rotate(22deg);
+                    opacity: 0;
+                }
+            }
+            @keyframes sputter {
+                0% {
+                    transform: scaleY(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scaleY(0.35);
+                    opacity: 0.45;
+                }
+                100% {
+                    transform: scaleY(0.9);
+                    opacity: 1;
+                }
+            }
+
+            .frag {
+                opacity: 0;
+                animation: frag 1.1s cubic-bezier(0.2, 0.7, 0.4, 1) 0.8s
+                    forwards;
+            }
+            .frag.f1 {
+                clip-path: polygon(20% 0, 80% 0, 86% 30%, 14% 26%);
+                --tx: -40px;
+                --ty: -150px;
+                --rot: -160deg;
+            }
+            .frag.f2 {
+                clip-path: polygon(0 26%, 50% 28%, 42% 72%, 0 78%);
+                --tx: -140px;
+                --ty: 30px;
+                --rot: -260deg;
+            }
+            .frag.f3 {
+                clip-path: polygon(50% 28%, 100% 30%, 100% 74%, 42% 72%);
+                --tx: 130px;
+                --ty: -30px;
+                --rot: 210deg;
+            }
+            .frag.f4 {
+                clip-path: polygon(0 78%, 42% 72%, 100% 74%, 100% 100%, 0 100%);
+                --tx: 30px;
+                --ty: 170px;
+                --rot: 140deg;
+            }
+            @keyframes frag {
+                0% {
+                    opacity: 1;
+                    transform: translate(0, 0) rotate(22deg);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(var(--tx), var(--ty))
+                        rotate(var(--rot));
+                }
+            }
+
+            .boom {
+                position: absolute;
+                left: -110px;
+                top: -110px;
+                width: 220px;
+                height: 220px;
+                opacity: 0;
+                animation: boom 0.75s ease-out 0.78s forwards;
+            }
+            .boom.b2 {
+                left: -75px;
+                top: -75px;
+                width: 150px;
+                height: 150px;
+                --spin: -35deg;
+                animation-delay: 0.95s;
+            }
+            @keyframes boom {
+                0% {
+                    opacity: 1;
+                    transform: scale(0.1) rotate(0deg);
+                }
+                30% {
+                    opacity: 1;
+                    transform: scale(1.1) rotate(calc(var(--spin, 25deg) * 0.5));
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(1.5) rotate(var(--spin, 25deg));
+                }
+            }
+
+            .shockwave {
+                position: absolute;
+                left: -60px;
+                top: -60px;
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                border: 4px solid var(--cyan);
+                box-shadow:
+                    0 0 24px var(--cyan),
+                    inset 0 0 24px var(--magenta);
+                opacity: 0;
+                animation: shock 0.7s ease-out 0.78s forwards;
+            }
+            @keyframes shock {
+                0% {
+                    opacity: 1;
+                    transform: scale(0.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(3.2);
+                }
+            }
+
+            .ember {
+                position: absolute;
+                left: -3px;
+                top: -3px;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--c);
+                box-shadow: 0 0 8px var(--c);
+                opacity: 0;
+                animation: ember 1s cubic-bezier(0.15, 0.7, 0.4, 1) 0.8s
+                    forwards;
+            }
+            @keyframes ember {
+                0% {
+                    opacity: 1;
+                    transform: translate(0, 0) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(var(--dx), var(--dy)) scale(0.3);
+                }
+            }
+
+            .shell.quake {
+                animation: quake 0.45s linear;
+            }
+            @keyframes quake {
+                0%,
+                100% {
+                    transform: none;
+                }
+                20% {
+                    transform: translate(-6px, 3px);
+                }
+                40% {
+                    transform: translate(5px, -4px);
+                }
+                60% {
+                    transform: translate(-4px, 2px);
+                }
+                80% {
+                    transform: translate(3px, -1px);
+                }
+            }
+
+            .sr-only {
+                position: absolute !important;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0 0 0 0);
+                white-space: nowrap;
+                border: 0;
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+
+            /* ---------- Accessibility preferences ---------- */
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                    scroll-behavior: auto !important;
+                }
+                .glitch-layer,
+                .fx-stage {
+                    display: none;
+                }
+            }
+
+            @media (forced-colors: active) {
+                .option,
+                .panel,
+                .progress {
+                    border: 2px solid CanvasText;
+                }
+                .progress-fill {
+                    background: Highlight;
+                }
+                .btn {
+                    border: 2px solid ButtonText;
+                    clip-path: none;
+                }
+                .glitch-layer,
+                .scanlines,
+                .grid-floor,
+                .flash {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="stars" aria-hidden="true"></canvas>
+        <div class="grid-floor" aria-hidden="true"></div>
+        <div class="flash" id="flash" aria-hidden="true"></div>
+        <div class="fx-stage" id="fx-stage" aria-hidden="true"></div>
+        <div class="scanlines" aria-hidden="true"></div>
+
+        <div class="shell" id="shell">
+            <header class="hud">
+                <p class="brand">NEON//ORBIT<small>v2.077</small></p>
+                <div class="hud-actions">
+                    <p class="score">
+                        <span aria-hidden="true">SCORE</span>
+                        <span class="sr-only">Score:</span>
+                        <span class="score-value" id="score">0</span>
+                        <span
+                            ><span aria-hidden="true">/</span
+                            ><span class="sr-only">out of</span> 10</span
+                        >
+                    </p>
+                    <button
+                        type="button"
+                        class="theme-toggle"
+                        id="theme-toggle"
+                        aria-label="Switch to light mode"
+                        title="Switch to light mode"
+                    >
+                        <img
+                            class="icon-sun"
+                            src="images/sun.svg"
+                            alt=""
+                            width="28"
+                            height="28"
+                        />
+                        <img
+                            class="icon-moon"
+                            src="images/moon.svg"
+                            alt=""
+                            width="28"
+                            height="28"
+                        />
+                    </button>
+                    <p class="sr-only" id="theme-status" role="status"></p>
+                </div>
+            </header>
+
+            <main id="main">
+                <!-- Start screen -->
+                <section
+                    id="screen-start"
+                    class="panel"
+                    aria-labelledby="start-title"
+                >
+                    <p class="tag">// Mission briefing</p>
+                    <h1 class="glitch" id="start-title">
+                        <span>Space Exploration Quiz</span>
+                        <span class="glitch-layer l1" aria-hidden="true"
+                            >Space Exploration Quiz</span
+                        >
+                        <span class="glitch-layer l2" aria-hidden="true"
+                            >Space Exploration Quiz</span
+                        >
+                    </h1>
+                    <p class="lead">
+                        Jack into the archive and prove you know the history of
+                        human spaceflight. Ten questions. One shot each. No
+                        respawns.
+                    </p>
+                    <ul class="briefing">
+                        <li>
+                            10 questions on rockets, rovers, telescopes and the
+                            people who flew them.
+                        </li>
+                        <li>
+                            Answer by click, tap, or press <kbd>1</kbd>–<kbd
+                                >4</kbd
+                            >
+                            / <kbd>A</kbd>–<kbd>D</kbd>.
+                        </li>
+                        <li>Every answer unlocks a decrypted fact file.</li>
+                    </ul>
+                    <button type="button" class="btn" id="start-btn">
+                        Launch quiz <span aria-hidden="true">▸</span>
+                    </button>
+                </section>
+
+                <!-- Quiz screen -->
+                <section
+                    id="screen-quiz"
+                    class="panel"
+                    aria-labelledby="question-text"
+                    hidden
+                >
+                    <div class="progress-meta">
+                        <span id="q-counter">Question 1 of 10</span>
+                        <span id="progress-pct" aria-hidden="true">0%</span>
+                    </div>
+                    <div
+                        class="progress"
+                        id="progress"
+                        role="progressbar"
+                        aria-label="Quiz progress"
+                        aria-valuemin="0"
+                        aria-valuemax="10"
+                        aria-valuenow="0"
+                        aria-valuetext="0 of 10 questions answered"
+                    >
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+
+                    <div class="question-card" id="question-card">
+                        <h2
+                            class="question"
+                            id="question-text"
+                            tabindex="-1"
+                        ></h2>
+                        <div
+                            class="options"
+                            id="options"
+                            role="group"
+                            aria-labelledby="question-text"
+                        ></div>
+
+                        <div class="feedback" id="feedback" hidden>
+                            <p class="feedback-title" id="feedback-title"></p>
+                            <p class="feedback-fact" id="feedback-fact"></p>
+                        </div>
+
+                        <div class="actions">
+                            <button
+                                type="button"
+                                class="btn"
+                                id="next-btn"
+                                aria-describedby="feedback"
+                                hidden
+                            >
+                                <span id="next-label">Next question</span>
+                                <span aria-hidden="true">▸</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Results screen -->
+                <section
+                    id="screen-results"
+                    class="panel"
+                    aria-labelledby="results-title"
+                    hidden
+                >
+                    <p class="tag">// Transmission complete</p>
+                    <h2 class="results-title" id="results-title" tabindex="-1">
+                        Mission debrief
+                    </h2>
+
+                    <div class="results-top">
+                        <div
+                            class="ring"
+                            id="ring"
+                            role="img"
+                            aria-label="Final score: 0 out of 10"
+                        >
+                            <div class="ring-inner">
+                                <span class="ring-score" id="ring-score"
+                                    >0</span
+                                >
+                                <span class="ring-total">/ 10</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="rank-label">RANK ACQUIRED</p>
+                            <p class="rank" id="rank"></p>
+                            <p class="rank-msg" id="rank-msg"></p>
+                            <dl class="stats">
+                                <div>
+                                    <dt>Correct</dt>
+                                    <dd id="stat-correct">0</dd>
+                                </div>
+                                <div>
+                                    <dt>Missed</dt>
+                                    <dd id="stat-missed">0</dd>
+                                </div>
+                                <div>
+                                    <dt>Accuracy</dt>
+                                    <dd id="stat-accuracy">0%</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <h3 class="review-title">Answer log</h3>
+                    <ol class="review" id="review"></ol>
+
+                    <button type="button" class="btn" id="restart-btn">
+                        Run it again <span aria-hidden="true">↻</span>
+                    </button>
+                </section>
+
+                <noscript>
+                    <p class="panel">
+                        This quiz needs JavaScript enabled to run.
+                    </p>
+                </noscript>
+            </main>
+
+            <footer class="footer">
+                <p>NO SERVER · NO DEPENDENCIES · JUST YOU AND THE VOID</p>
+            </footer>
+        </div>
+
+        <script>
+            ;(() => {
+                "use strict"
+
+                const QUESTIONS = [
+                    {
+                        q: "Who was the first human to journey into outer space?",
+                        options: [
+                            "Yuri Gagarin",
+                            "Neil Armstrong",
+                            "Alan Shepard",
+                            "John Glenn",
+                        ],
+                        answer: 0,
+                        fact: "On 12 April 1961, Yuri Gagarin orbited Earth once aboard Vostok 1 in a flight lasting about 108 minutes.",
+                    },
+                    {
+                        q: "In what year did Apollo 11 land the first humans on the Moon?",
+                        options: ["1965", "1969", "1972", "1975"],
+                        answer: 1,
+                        fact: "Neil Armstrong and Buzz Aldrin landed on 20 July 1969 while Michael Collins orbited above in the command module Columbia.",
+                    },
+                    {
+                        q: "Olympus Mons, the tallest known volcano in the Solar System, is found on which world?",
+                        options: ["Venus", "Io", "Mars", "Earth"],
+                        answer: 2,
+                        fact: "Olympus Mons rises roughly 22 km above the Martian surface, about two and a half times the height of Mount Everest.",
+                    },
+                    {
+                        q: "What was the first artificial satellite placed into Earth orbit?",
+                        options: [
+                            "Explorer 1",
+                            "Sputnik 1",
+                            "Vanguard 1",
+                            "Telstar 1",
+                        ],
+                        answer: 1,
+                        fact: "The Soviet Union launched Sputnik 1 on 4 October 1957. Its simple radio beeps kicked off the Space Age.",
+                    },
+                    {
+                        q: "Which space telescope launched in December 2021 to observe the universe in infrared from the Sun–Earth L2 point?",
+                        options: [
+                            "Hubble Space Telescope",
+                            "Spitzer Space Telescope",
+                            "Kepler Space Telescope",
+                            "James Webb Space Telescope",
+                        ],
+                        answer: 3,
+                        fact: "Webb launched on 25 December 2021. Its 6.5 m gold-coated mirror lets it see some of the earliest galaxies ever formed.",
+                    },
+                    {
+                        q: "Which spacecraft is currently the most distant human-made object from Earth?",
+                        options: [
+                            "Voyager 1",
+                            "Voyager 2",
+                            "Pioneer 10",
+                            "New Horizons",
+                        ],
+                        answer: 0,
+                        fact: "Launched in 1977, Voyager 1 crossed into interstellar space in 2012 and is now more than 24 billion km from Earth.",
+                    },
+                    {
+                        q: "Which NASA rover landed in Jezero Crater in 2021 carrying the Ingenuity helicopter?",
+                        options: [
+                            "Curiosity",
+                            "Opportunity",
+                            "Perseverance",
+                            "Sojourner",
+                        ],
+                        answer: 2,
+                        fact: "Ingenuity made the first powered, controlled flight on another planet on 19 April 2021 and went on to fly 72 times.",
+                    },
+                    {
+                        q: "Who was the first American woman to fly in space?",
+                        options: [
+                            "Valentina Tereshkova",
+                            "Sally Ride",
+                            "Mae Jemison",
+                            "Eileen Collins",
+                        ],
+                        answer: 1,
+                        fact: "Sally Ride flew aboard Space Shuttle Challenger on STS-7 in June 1983. Valentina Tereshkova became the first woman in space 20 years earlier.",
+                    },
+                    {
+                        q: "Roughly how long does the International Space Station take to orbit Earth once?",
+                        options: [
+                            "About 90 minutes",
+                            "About 12 hours",
+                            "About 24 hours",
+                            "About 7 days",
+                        ],
+                        answer: 0,
+                        fact: "Travelling at about 28,000 km/h, the ISS circles Earth around 16 times a day, so its crew sees about 16 sunrises daily.",
+                    },
+                    {
+                        q: "Which mission made the first soft landing on the far side of the Moon?",
+                        options: [
+                            "Luna 9",
+                            "Apollo 17",
+                            "Chandrayaan-3",
+                            "Chang'e 4",
+                        ],
+                        answer: 3,
+                        fact: "China's Chang'e 4 touched down in Von Kármán crater on 3 January 2019, relaying signals home via the Queqiao satellite.",
+                    },
+                ]
+
+                const TOTAL = QUESTIONS.length
+                const KEYS = ["A", "B", "C", "D"]
+                const SPARK_COLORS = [
+                    "#39ff88",
+                    "#00f0ff",
+                    "#fcee0a",
+                    "#ff2bd6",
+                ]
+                const RANKS = [
+                    {
+                        min: 10,
+                        title: "Orbital Legend",
+                        msg: "Flawless run. The entire galaxy is cached in your neural implant.",
+                    },
+                    {
+                        min: 8,
+                        title: "Star Netrunner",
+                        msg: "Elite recall. Mission control would hand you the keys to the launchpad.",
+                    },
+                    {
+                        min: 6,
+                        title: "Void Pilot",
+                        msg: "Solid flight. A few more data shards and you will hit escape velocity.",
+                    },
+                    {
+                        min: 4,
+                        title: "Launch Cadet",
+                        msg: "You cleared the tower. Re-run the sim and push for a higher orbit.",
+                    },
+                    {
+                        min: 0,
+                        title: "Ground Crew",
+                        msg: "Everyone starts on the pad. Read the fact files and launch again.",
+                    },
+                ]
+
+                const $ = (id) => document.getElementById(id)
+                const screens = {
+                    start: $("screen-start"),
+                    quiz: $("screen-quiz"),
+                    results: $("screen-results"),
+                }
+                const ui = {
+                    score: $("score"),
+                    counter: $("q-counter"),
+                    pct: $("progress-pct"),
+                    progress: $("progress"),
+                    fill: $("progress-fill"),
+                    card: $("question-card"),
+                    question: $("question-text"),
+                    options: $("options"),
+                    feedback: $("feedback"),
+                    fbTitle: $("feedback-title"),
+                    fbFact: $("feedback-fact"),
+                    next: $("next-btn"),
+                    nextLabel: $("next-label"),
+                    flash: $("flash"),
+                    fx: $("fx-stage"),
+                    shell: $("shell"),
+                    resultsTitle: $("results-title"),
+                    ring: $("ring"),
+                    ringScore: $("ring-score"),
+                    rank: $("rank"),
+                    rankMsg: $("rank-msg"),
+                    statCorrect: $("stat-correct"),
+                    statMissed: $("stat-missed"),
+                    statAccuracy: $("stat-accuracy"),
+                    review: $("review"),
+                }
+                const reducedMotion = window.matchMedia(
+                    "(prefers-reduced-motion: reduce)"
+                )
+
+                const state = {
+                    questions: [],
+                    index: 0,
+                    score: 0,
+                    answered: false,
+                    log: [],
+                }
+
+                function shuffle(list) {
+                    const a = list.slice()
+                    for (let i = a.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1))
+                        ;[a[i], a[j]] = [a[j], a[i]]
+                    }
+                    return a
+                }
+
+                // Restart a CSS animation by toggling its class.
+                function replay(el, cls) {
+                    el.classList.remove(cls)
+                    void el.offsetWidth
+                    el.classList.add(cls)
+                }
+
+                function show(name) {
+                    for (const [key, el] of Object.entries(screens))
+                        el.hidden = key !== name
+                }
+
+                function setScore(value, animate) {
+                    ui.score.textContent = value
+                    if (animate) replay(ui.score, "bump")
+                }
+
+                function setProgress(done) {
+                    const pct = Math.round((done / TOTAL) * 100)
+                    ui.fill.style.width = pct + "%"
+                    ui.pct.textContent = pct + "%"
+                    ui.progress.setAttribute("aria-valuenow", String(done))
+                    ui.progress.setAttribute(
+                        "aria-valuetext",
+                        `${done} of ${TOTAL} questions answered`
+                    )
+                }
+
+                function start() {
+                    state.questions = shuffle(QUESTIONS).map((q) => ({
+                        ...q,
+                        choices: shuffle(
+                            q.options.map((text, i) => ({
+                                text,
+                                correct: i === q.answer,
+                            }))
+                        ),
+                    }))
+                    state.index = 0
+                    state.score = 0
+                    state.log = []
+                    setScore(0, false)
+                    setProgress(0)
+                    show("quiz")
+                    render()
+                }
+
+                function render() {
+                    const q = state.questions[state.index]
+                    state.answered = false
+
+                    ui.counter.textContent = `Question ${state.index + 1} of ${TOTAL}`
+                    ui.question.textContent = q.q
+
+                    ui.options.replaceChildren(
+                        ...q.choices.map((choice, i) => {
+                            const btn = document.createElement("button")
+                            btn.type = "button"
+                            btn.className = "option"
+
+                            const key = document.createElement("span")
+                            key.className = "key"
+                            key.setAttribute("aria-hidden", "true")
+                            key.textContent = KEYS[i]
+
+                            const label = document.createElement("span")
+                            label.className = "label"
+                            label.textContent = choice.text
+
+                            const mark = document.createElement("span")
+                            mark.className = "mark"
+
+                            btn.append(key, label, mark)
+                            btn.addEventListener("click", () => choose(i))
+                            return btn
+                        })
+                    )
+
+                    ui.feedback.hidden = true
+                    ui.next.hidden = true
+                    replay(ui.card, "enter")
+                    ui.question.focus()
+                }
+
+                function setMark(btn, symbol, text) {
+                    const mark = btn.querySelector(".mark")
+                    const icon = document.createElement("span")
+                    icon.setAttribute("aria-hidden", "true")
+                    icon.textContent = symbol + " "
+                    mark.replaceChildren(icon, document.createTextNode(text))
+                }
+
+                function choose(i) {
+                    if (state.answered) return
+                    state.answered = true
+
+                    const q = state.questions[state.index]
+                    const buttons = Array.from(
+                        ui.options.querySelectorAll(".option")
+                    )
+                    const correctIndex = q.choices.findIndex((c) => c.correct)
+                    const isCorrect = i === correctIndex
+
+                    buttons.forEach((b) => {
+                        b.disabled = true
+                    })
+                    buttons[correctIndex].classList.add("is-correct")
+                    setMark(
+                        buttons[correctIndex],
+                        "✓",
+                        isCorrect ? "Your answer" : "Correct"
+                    )
+
+                    if (isCorrect) {
+                        state.score++
+                        setScore(state.score, true)
+                        burst(buttons[i])
+                        flash("good")
+                        launchShip()
+                    } else {
+                        buttons[i].classList.add("is-wrong")
+                        setMark(buttons[i], "✗", "Your answer")
+                        crashRocket()
+                    }
+
+                    state.log.push({
+                        question: q.q,
+                        chosen: q.choices[i].text,
+                        correct: q.choices[correctIndex].text,
+                        isCorrect,
+                    })
+                    setProgress(state.index + 1)
+
+                    ui.feedback.className =
+                        "feedback " + (isCorrect ? "good" : "bad")
+                    ui.fbTitle.textContent = isCorrect
+                        ? `✓ Correct! Access granted. Score: ${state.score} of ${TOTAL}.`
+                        : `✗ Access denied. The answer is ${q.choices[correctIndex].text}.`
+                    ui.fbFact.textContent = q.fact
+                    ui.feedback.hidden = false
+
+                    ui.nextLabel.textContent =
+                        state.index === TOTAL - 1
+                            ? "View results"
+                            : "Next question"
+                    ui.next.hidden = false
+                    // Next button is described by the feedback panel, so screen readers hear the result on focus.
+                    ui.next.focus()
+                }
+
+                function next() {
+                    state.index++
+                    if (state.index >= TOTAL) results()
+                    else render()
+                }
+
+                function burst(btn) {
+                    if (reducedMotion.matches) return
+                    const count = 16
+                    for (let n = 0; n < count; n++) {
+                        const angle =
+                            (Math.PI * 2 * n) / count + Math.random() * 0.4
+                        const dist = 60 + Math.random() * 70
+                        const spark = document.createElement("span")
+                        spark.className = "spark"
+                        spark.setAttribute("aria-hidden", "true")
+                        spark.style.setProperty(
+                            "--dx",
+                            `${Math.cos(angle) * dist}px`
+                        )
+                        spark.style.setProperty(
+                            "--dy",
+                            `${Math.sin(angle) * dist * 0.6}px`
+                        )
+                        spark.style.setProperty(
+                            "--c",
+                            SPARK_COLORS[n % SPARK_COLORS.length]
+                        )
+                        spark.addEventListener("animationend", () =>
+                            spark.remove()
+                        )
+                        btn.appendChild(spark)
+                    }
+                }
+
+                function flash(kind) {
+                    ui.flash.className = "flash"
+                    void ui.flash.offsetWidth
+                    ui.flash.classList.add(kind)
+                }
+
+                /* ---------- Ship FX ---------- */
+                const IMG = {
+                    rocket: "images/rocket.svg",
+                    flame: "images/flame.svg",
+                    ufo: "images/ufo.svg",
+                    explosion: "images/explosion.svg",
+                }
+                Object.values(IMG).forEach((src) => {
+                    new Image().src = src
+                })
+
+                const BOOM_AT = 780 // ms, matches the CSS delays on .frag/.boom/.ember
+
+                function el(tag, className, src) {
+                    const node = document.createElement(tag)
+                    if (className) node.className = className
+                    if (src) {
+                        node.src = src
+                        node.alt = ""
+                        node.decoding = "async"
+                    }
+                    return node
+                }
+
+                function rocketShip() {
+                    const ship = el("div", "ship")
+                    ship.append(
+                        el("span", "trail"),
+                        el("img", "flame", IMG.flame),
+                        el("img", "hull", IMG.rocket)
+                    )
+                    return ship
+                }
+
+                function spawnFx(node, lifetime) {
+                    ui.fx.appendChild(node)
+                    setTimeout(() => node.remove(), lifetime)
+                }
+
+                function launchShip() {
+                    if (reducedMotion.matches) return
+                    const vw = window.innerWidth
+                    const vh = window.innerHeight
+
+                    if (Math.random() < 0.5) {
+                        const flyer = el("div", "fly-ufo")
+                        flyer.style.setProperty(
+                            "--y",
+                            `${4 + Math.random() * 18}vh`
+                        )
+                        flyer.append(el("img", "", IMG.ufo))
+                        spawnFx(flyer, 2100)
+                        return
+                    }
+
+                    // Straight diagonal launch; rotate the rocket to face its direction of travel.
+                    const sx = -80 + Math.random() * vw * 0.35
+                    const sy = vh + 160
+                    const ex = sx + vw * (0.6 + Math.random() * 0.5)
+                    const ey = -220
+                    const angle = Math.atan2(ex - sx, sy - ey) * (180 / Math.PI)
+
+                    const flyer = el("div", "fly-rocket")
+                    flyer.style.setProperty("--sx", `${sx}px`)
+                    flyer.style.setProperty("--sy", `${sy}px`)
+                    flyer.style.setProperty("--ex", `${ex}px`)
+                    flyer.style.setProperty("--ey", `${ey}px`)
+                    flyer.style.setProperty("--angle", `${angle}deg`)
+                    flyer.append(rocketShip())
+                    spawnFx(flyer, 1900)
+                }
+
+                function crashRocket() {
+                    if (reducedMotion.matches) {
+                        flash("bad")
+                        return
+                    }
+                    const crash = el("div", "crash")
+                    crash.style.left = `${window.innerWidth * (0.2 + Math.random() * 0.6)}px`
+                    crash.style.top = `${window.innerHeight * (0.35 + Math.random() * 0.2)}px`
+
+                    const rising = el("div", "crash-rocket")
+                    rising.append(rocketShip())
+                    crash.append(rising)
+
+                    for (let n = 1; n <= 4; n++)
+                        crash.append(el("img", `frag f${n}`, IMG.rocket))
+                    crash.append(
+                        el("span", "shockwave"),
+                        el("img", "boom", IMG.explosion),
+                        el("img", "boom b2", IMG.explosion)
+                    )
+
+                    const embers = 18
+                    for (let n = 0; n < embers; n++) {
+                        const angle =
+                            (Math.PI * 2 * n) / embers + Math.random() * 0.5
+                        const dist = 90 + Math.random() * 140
+                        const ember = el("span", "ember")
+                        ember.style.setProperty(
+                            "--dx",
+                            `${Math.cos(angle) * dist}px`
+                        )
+                        ember.style.setProperty(
+                            "--dy",
+                            `${Math.sin(angle) * dist + 60}px`
+                        )
+                        ember.style.setProperty(
+                            "--c",
+                            SPARK_COLORS[n % SPARK_COLORS.length]
+                        )
+                        crash.append(ember)
+                    }
+
+                    spawnFx(crash, 2100)
+                    setTimeout(() => {
+                        flash("bad")
+                        replay(ui.shell, "quake")
+                    }, BOOM_AT)
+                }
+
+                function animateRing(score) {
+                    const target = (score / TOTAL) * 100
+                    if (reducedMotion.matches) {
+                        ui.ring.style.setProperty("--p", target)
+                        ui.ringScore.textContent = score
+                        return
+                    }
+                    const duration = 1400
+                    const t0 = performance.now()
+                    const step = (now) => {
+                        const t = Math.min(1, (now - t0) / duration)
+                        const eased = 1 - Math.pow(1 - t, 3)
+                        ui.ring.style.setProperty(
+                            "--p",
+                            (target * eased).toFixed(2)
+                        )
+                        ui.ringScore.textContent = Math.round(score * eased)
+                        if (t < 1) requestAnimationFrame(step)
+                    }
+                    requestAnimationFrame(step)
+                }
+
+                function results() {
+                    show("results")
+                    const s = state.score
+                    const rank = RANKS.find((r) => s >= r.min)
+
+                    ui.rank.textContent = rank.title
+                    ui.rankMsg.textContent = rank.msg
+                    ui.statCorrect.textContent = s
+                    ui.statMissed.textContent = TOTAL - s
+                    ui.statAccuracy.textContent =
+                        Math.round((s / TOTAL) * 100) + "%"
+                    ui.ring.setAttribute(
+                        "aria-label",
+                        `Final score: ${s} out of ${TOTAL}`
+                    )
+                    ui.ring.style.setProperty("--p", 0)
+                    ui.ringScore.textContent = "0"
+                    animateRing(s)
+
+                    ui.review.replaceChildren(
+                        ...state.log.map((entry, n) => {
+                            const li = document.createElement("li")
+                            li.className =
+                                "review-item " +
+                                (entry.isCorrect ? "good" : "bad")
+                            li.style.animationDelay = `${n * 60}ms`
+
+                            const badge = document.createElement("span")
+                            badge.className = "badge"
+                            const icon = document.createElement("span")
+                            icon.setAttribute("aria-hidden", "true")
+                            icon.textContent = entry.isCorrect ? "✓ " : "✗ "
+                            badge.append(
+                                icon,
+                                entry.isCorrect ? "Correct" : "Incorrect"
+                            )
+
+                            const q = document.createElement("p")
+                            q.className = "review-q"
+                            q.textContent = entry.question
+
+                            const yours = document.createElement("p")
+                            yours.className = "review-a"
+                            const yoursStrong = document.createElement("strong")
+                            yoursStrong.textContent = entry.chosen
+                            yours.append("Your answer: ", yoursStrong)
+
+                            li.append(badge, q, yours)
+
+                            if (!entry.isCorrect) {
+                                const right = document.createElement("p")
+                                right.className = "review-a"
+                                const rightStrong =
+                                    document.createElement("strong")
+                                rightStrong.textContent = entry.correct
+                                right.append("Correct answer: ", rightStrong)
+                                li.append(right)
+                            }
+                            return li
+                        })
+                    )
+
+                    ui.resultsTitle.focus()
+                }
+
+                // Shortcuts only fire while focus is inside the quiz panel (WCAG 2.1.4).
+                document.addEventListener("keydown", (e) => {
+                    if (screens.quiz.hidden || state.answered) return
+                    if (e.altKey || e.ctrlKey || e.metaKey) return
+                    if (!screens.quiz.contains(document.activeElement)) return
+                    const key = e.key.toLowerCase()
+                    let idx = ["1", "2", "3", "4"].indexOf(key)
+                    if (idx < 0) idx = ["a", "b", "c", "d"].indexOf(key)
+                    if (idx >= 0 && idx < ui.options.children.length) {
+                        e.preventDefault()
+                        choose(idx)
+                    }
+                })
+
+                $("start-btn").addEventListener("click", start)
+                $("restart-btn").addEventListener("click", start)
+                ui.next.addEventListener("click", next)
+
+                /* ---------- Light / dark theme ---------- */
+                const THEME_KEY = "neon-orbit-theme"
+                const THEME_COLORS = { dark: "#07060f", light: "#f4f1ff" }
+                const root = document.documentElement
+                const systemLight = window.matchMedia(
+                    "(prefers-color-scheme: light)"
+                )
+                const themeToggle = $("theme-toggle")
+                const themeStatus = $("theme-status")
+                const themeMeta = document.querySelector(
+                    'meta[name="theme-color"]'
+                )
+
+                const systemTheme = () =>
+                    systemLight.matches ? "light" : "dark"
+
+                function storedTheme() {
+                    try {
+                        const t = localStorage.getItem(THEME_KEY)
+                        return t === "light" || t === "dark" ? t : null
+                    } catch {
+                        return null
+                    }
+                }
+
+                function applyTheme(theme, announce) {
+                    root.dataset.theme = theme
+                    const label =
+                        theme === "light"
+                            ? "Switch to dark mode"
+                            : "Switch to light mode"
+                    themeToggle.setAttribute("aria-label", label)
+                    themeToggle.title = label
+                    themeMeta?.setAttribute("content", THEME_COLORS[theme])
+                    if (announce) {
+                        themeStatus.textContent =
+                            theme === "light" ? "Light mode on" : "Dark mode on"
+                    }
+                    document.dispatchEvent(
+                        new CustomEvent("themechange", { detail: theme })
+                    )
+                }
+
+                function toggleTheme() {
+                    const next =
+                        root.dataset.theme === "light" ? "dark" : "light"
+
+                    // Choosing the system theme clears the override, so the page follows the OS again.
+                    try {
+                        if (next === systemTheme())
+                            localStorage.removeItem(THEME_KEY)
+                        else localStorage.setItem(THEME_KEY, next)
+                    } catch {}
+
+                    if (
+                        !document.startViewTransition ||
+                        reducedMotion.matches
+                    ) {
+                        applyTheme(next, true)
+                        return
+                    }
+
+                    // Reveal the new theme as a circle expanding from the toggle button.
+                    const r = themeToggle.getBoundingClientRect()
+                    const x = r.left + r.width / 2
+                    const y = r.top + r.height / 2
+                    const radius = Math.hypot(
+                        Math.max(x, window.innerWidth - x),
+                        Math.max(y, window.innerHeight - y)
+                    )
+                    const transition = document.startViewTransition(() =>
+                        applyTheme(next, true)
+                    )
+                    transition.ready
+                        .then(() => {
+                            root.animate(
+                                {
+                                    clipPath: [
+                                        `circle(0px at ${x}px ${y}px)`,
+                                        `circle(${radius}px at ${x}px ${y}px)`,
+                                    ],
+                                },
+                                {
+                                    duration: 600,
+                                    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+                                    pseudoElement:
+                                        "::view-transition-new(root)",
+                                }
+                            )
+                        })
+                        .catch(() => {})
+                }
+
+                themeToggle.addEventListener("click", toggleTheme)
+                systemLight.addEventListener("change", () => {
+                    if (!storedTheme()) applyTheme(systemTheme(), true)
+                })
+                applyTheme(
+                    root.dataset.theme === "light" ? "light" : "dark",
+                    false
+                )
+
+                /* ---------- Warp starfield ---------- */
+                ;(function starfield() {
+                    const canvas = $("stars")
+                    const ctx = canvas.getContext("2d")
+                    if (!ctx) return
+
+                    const PALETTES = {
+                        dark: [
+                            "#ffffff",
+                            "#ffffff",
+                            "#ffffff",
+                            "#00f0ff",
+                            "#ff2bd6",
+                            "#fcee0a",
+                            "#8b5cff",
+                        ],
+                        light: [
+                            "#2a1a5e",
+                            "#2a1a5e",
+                            "#2a1a5e",
+                            "#006b8f",
+                            "#c0008f",
+                            "#8a5a00",
+                            "#6a3df0",
+                        ],
+                    }
+                    let colors = PALETTES[root.dataset.theme] || PALETTES.dark
+                    let alphaScale = root.dataset.theme === "light" ? 0.6 : 1
+                    const DEPTH = 1000
+                    let w = 0,
+                        h = 0,
+                        dpr = 1,
+                        stars = [],
+                        raf = 0
+
+                    const spawn = (s, far) => {
+                        s.x = (Math.random() * 2 - 1) * w
+                        s.y = (Math.random() * 2 - 1) * h
+                        s.z = far ? DEPTH : Math.random() * DEPTH + 1
+                        s.i = (Math.random() * colors.length) | 0
+                        return s
+                    }
+
+                    function resize() {
+                        dpr = Math.min(window.devicePixelRatio || 1, 2)
+                        w = canvas.width = Math.floor(window.innerWidth * dpr)
+                        h = canvas.height = Math.floor(window.innerHeight * dpr)
+                        const count = Math.min(
+                            450,
+                            Math.round(
+                                (window.innerWidth * window.innerHeight) / 3500
+                            )
+                        )
+                        stars = Array.from({ length: count }, () =>
+                            spawn({}, false)
+                        )
+                        draw(0)
+                    }
+
+                    function draw(speed) {
+                        ctx.clearRect(0, 0, w, h)
+                        const cx = w / 2,
+                            cy = h / 2,
+                            focal = DEPTH * 0.5
+                        for (const s of stars) {
+                            s.z -= speed
+                            if (s.z < 1) spawn(s, true)
+                            const k = focal / s.z
+                            const sx = cx + s.x * k
+                            const sy = cy + s.y * k
+                            if (sx < 0 || sx > w || sy < 0 || sy > h) {
+                                if (speed) spawn(s, true)
+                                continue
+                            }
+                            const depth = 1 - s.z / DEPTH
+                            const size = Math.max(0.6, depth * 2.8) * dpr
+                            ctx.globalAlpha = (0.25 + depth * 0.75) * alphaScale
+                            ctx.fillStyle = colors[s.i]
+                            ctx.fillRect(sx, sy, size, size)
+                        }
+                        ctx.globalAlpha = 1
+                    }
+
+                    function tick() {
+                        draw(1.6)
+                        raf = requestAnimationFrame(tick)
+                    }
+
+                    function apply() {
+                        cancelAnimationFrame(raf)
+                        if (reducedMotion.matches) draw(0)
+                        else raf = requestAnimationFrame(tick)
+                    }
+
+                    window.addEventListener("resize", () => {
+                        resize()
+                    })
+                    reducedMotion.addEventListener("change", apply)
+                    document.addEventListener("themechange", (e) => {
+                        colors = PALETTES[e.detail] || PALETTES.dark
+                        alphaScale = e.detail === "light" ? 0.6 : 1
+                        if (reducedMotion.matches) draw(0)
+                    })
+                    resize()
+                    apply()
+                })()
+            })()
+        </script>
+    </body>
+</html>
