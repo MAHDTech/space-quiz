@@ -1,0 +1,21 @@
+{
+    "name": "space-quiz",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Cyberpunk-themed, accessible space exploration quiz in a single HTML file",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/MAHDTech/space-quiz.git"
+    },
+    "homepage": "https://space-quiz.mahdtech.com/",
+    "scripts": {
+        "lint:html": "html-validate index.html",
+        "validate:w3c": "java -jar node_modules/vnu-jar/build/dist/vnu.jar --also-check-svg --Werror --filterpattern \".*Trailing slash on void elements.*\" index.html images",
+        "test": "npm run lint:html && npm run validate:w3c"
+    },
+    "devDependencies": {
+        "html-validate": "11.23.0",
+        "vnu-jar": "26.11.26"
+    }
+}

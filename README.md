@@ -5,7 +5,33 @@ No build step, no server, no dependencies.
 
 ## Run it
 
-Open `index.html` in any modern browser.
+Open `index.html` in any modern browser, or visit the published site at
+<https://space-quiz.mahdtech.com/>.
+
+## Development
+
+Changes go through pull requests into `trunk`.
+
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and validates
+  `index.html` and the SVGs with [html-validate](https://html-validate.org/)
+  and the W3C [Nu HTML Checker](https://validator.github.io/validator/).
+- **Deploy** (`.github/workflows/pages.yml`) runs on every push to `trunk`,
+  repeats the same checks, then publishes `index.html` and `images/` to
+  GitHub Pages.
+
+The custom domain `space-quiz.mahdtech.com` is set in the repository's Pages
+settings, with a Cloudflare DNS-only `CNAME` record pointing at
+`mahdtech.github.io`. There is no `CNAME` file: GitHub ignores it when Pages is
+published from a custom Actions workflow.
+
+To run the checks locally (requires Node.js 24 and Java 17+):
+
+```sh
+npm ci --ignore-scripts
+npm test
+```
+
+The validators are dev tooling only; the quiz itself has no dependencies.
 
 ## Features
 
@@ -19,6 +45,8 @@ Open `index.html` in any modern browser.
 ## Structure
 
 ```text
-index.html   # markup, styles and script
-images/      # SVG artwork (rocket, flame, UFO, explosion, sun, moon)
+index.html          # markup, styles and script
+images/             # SVG artwork (rocket, flame, UFO, explosion, sun, moon)
+.github/workflows/  # CI validation and GitHub Pages deployment
+.htmlvalidate.json  # html-validate rules
 ```
