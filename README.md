@@ -6,7 +6,7 @@ No build step, no server, no dependencies.
 ## Run it
 
 Open `index.html` in any modern browser, or visit the published site at
-<https://mahdtech.github.io/space-quiz/>.
+<https://space-quiz.mahdtech.com/>.
 
 ## Development
 
@@ -18,6 +18,11 @@ Changes go through pull requests into `trunk`.
 - **Deploy** (`.github/workflows/pages.yml`) runs on every push to `trunk`,
   repeats the same checks, then publishes `index.html` and `images/` to
   GitHub Pages.
+
+The custom domain `space-quiz.mahdtech.com` is set in the repository's Pages
+settings, with a Cloudflare DNS-only `CNAME` record pointing at
+`mahdtech.github.io`. There is no `CNAME` file: GitHub ignores it when Pages is
+published from a custom Actions workflow.
 
 To run the checks locally (requires Node.js 24 and Java 17+):
 

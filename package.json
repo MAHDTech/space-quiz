@@ -8,7 +8,7 @@
         "type": "git",
         "url": "git+https://github.com/MAHDTech/space-quiz.git"
     },
-    "homepage": "https://mahdtech.github.io/space-quiz/",
+    "homepage": "https://space-quiz.mahdtech.com/",
     "scripts": {
         "lint:html": "html-validate index.html",
         "validate:w3c": "java -jar node_modules/vnu-jar/build/dist/vnu.jar --also-check-svg --Werror --filterpattern \".*Trailing slash on void elements.*\" index.html images",
