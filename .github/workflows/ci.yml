@@ -1,0 +1,51 @@
+# Validates the site. Runs on every PR into trunk, and is reused by the
+# Pages workflow so nothing is deployed without passing the same checks.
+name: CI
+
+on:
+  pull_request:
+    branches: ["trunk"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same PR; trunk runs are keyed by SHA so
+# they are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate HTML
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # The Nu HTML Checker (vnu.jar) needs a JVM. Provide one explicitly
+      # instead of letting the vnu-jar postinstall script download a JDK.
+      - name: Set up Java
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dev tools
+        run: npm ci --ignore-scripts
+
+      - name: Lint HTML (html-validate)
+        run: npm run lint:html
+
+      - name: Validate HTML and SVG (W3C Nu HTML Checker)
+        run: npm run validate:w3c

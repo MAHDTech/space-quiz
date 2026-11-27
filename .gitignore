@@ -1,3 +1,9 @@
+# Dependencies (dev tooling only; the quiz itself has none)
+node_modules/
+
+# Pages build output
+_site/
+
 # OS
 .DS_Store
 Thumbs.db
